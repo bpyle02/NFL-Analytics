@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 
 def main():
-    pd.options.mode.chained_assignment = None  # default='warn'
+    pd.options.mode.chained_assignment = None  # Fixes a warning popup for "test_data['predictions'] = predictions"
 
     '''
 
@@ -21,32 +21,13 @@ def main():
 
     #print(pbp_data) # Prints out the files in the pbp_data directory
 
+    # Predict touchdowns for the 2021-2023 seasons
     target_seasons = [x for x in szn_folders 
-                  if ('1999' in x) |
-                  ('2000' in x) |
-                  ('2001' in x) |
-                  ('2002' in x) |
-                  ('2003' in x) |
-                  ('2004' in x) |
-                  ('2005' in x) |
-                  ('2006' in x) |
-                  ('2007' in x) |
-                  ('2008' in x) |
-                  ('2009' in x) |
-                  ('2010' in x) |
-                  ('2011' in x) |
-                  ('2012' in x) |
-                  ('2014' in x) |
-                  ('2013' in x) |
-                  ('2014' in x) |
-                  ('2015' in x) |
-                  ('2016' in x) |
-                  ('2017' in x) |
-                  ('2018' in x) |
-                  ('2019' in x) | 
-                  ('2020' in x) | 
+                  if ('2019' in x) |
+                  ('2020' in x) |
                   ('2021' in x)]
 
+    # Create a list of the file paths to the data
     data_files = ([f"""{project_dir}/pbp_data/{data_folder}/{os.listdir(f"{project_dir}/pbp_data/{data_folder}")[0]}""" for data_folder in target_seasons])
     #print(data_files) # Prints out the files in the pbp_data directory with full path
 
@@ -55,6 +36,8 @@ def main():
         Use Pandas to initialize the data frame with CSV data
 
     '''
+
+    print("Initializing DataFrame...")
 
     df = pd.DataFrame() # Create data frame variable
 
@@ -77,21 +60,20 @@ def main():
     qb_stats = ['season', 'passer_id', 'passer', 'pass', 'complete_pass', 'interception', 'sack', 'yards_gained', 'touchdown']
     group_by_stats = ['season', 'passer_id', 'passer']
 
-    print(type(qb_stats))
-    print(type("test"))
-
     qb_df = (df.loc[:, qb_stats].groupby(group_by_stats, as_index = False).sum()) # Group the data and aggregate the sum
 
     #print(qb_df.sample(20)) # Print a random sample of 20 rows of data
 
     print("Creating CSV file with QB stats by year...")
 
+    # Variables and function for generating the CSV file
     overwrite_csv = ""
     csv_filename = f"{project_dir}/usable_data/qb/stats_by_year.csv"
     ask_to_overwrite_csv(overwrite_csv, qb_df, csv_filename)
 
     print("Creating PNG files graphing QB stats by touchdowns...")
 
+    # Variables and function for generating the graphs
     overwrite_png = ""
     png_path = f"{project_dir}/usable_data/qb/touchdowns_and_"
     png_x = 'touchdown'
@@ -115,6 +97,7 @@ def main():
 
     print("Creating PNG files graphing QB stats from the previous year by touchdowns from this year...")
 
+    # Variables and function for generating the graphs
     overwrite_png_prev = ""
     png_prev_path = f"{project_dir}/usable_data/qb/touchdowns_and_"
     png_prev_x = 'touchdown'
@@ -130,9 +113,10 @@ def main():
     features = ['pass_prev', 'complete_pass_prev', 'interception_prev', 'sack_prev', 'yards_gained_prev', 'touchdown_prev'] # These are the stats we will use to predict the target stat
     target = 'touchdown' # This is what we want to predict
 
+    # Create the model data as well as the test and training data
     model_data = (new_qb_df.dropna(subset = features + [target])) # Removes null values
-    train_data = (model_data.loc[(model_data['season'] == 2022) | (model_data['season'] == 2020) | (model_data['season'] == 2019) | (model_data['season'] == 2018) | (model_data['season'] == 2017) | (model_data['season'] == 2015) | (model_data['season'] == 2014) | (model_data['season'] == 2013) | (model_data['season'] == 2012) | (model_data['season'] == 2011) | (model_data['season'] == 2010) | (model_data['season'] == 2009) | (model_data['season'] == 2008) | (model_data['season'] == 2007) | (model_data['season'] == 2006) | (model_data['season'] == 2005) | (model_data['season'] == 2003) | (model_data['season'] == 2002) | (model_data['season'] == 2001) | (model_data['season'] == 2000) | (model_data['season'] == 1999)]) # Train the model on 2019-2022 data
-    test_data = (model_data.loc[(model_data['season'] == 2023) | (model_data['season'] == 2021) | (model_data['season'] == 2016) | (model_data['season'] == 2012) | (model_data['season'] == 2004)]) # Test the model on 2023 data
+    train_data = (model_data.loc[model_data['season'] == 2020])
+    test_data = (model_data.loc[model_data['season'] == 2021])
 
     model = LinearRegression() # Initialize the linear regression model
 
@@ -149,6 +133,7 @@ def main():
 
     print("Creating PNG file graphing touchdowns by predicted touchdowns...")
 
+    # Vraiables and function for generating the CSV file
     overwrite_png_predictions = ""
     png_predictions_path = f"{project_dir}/usable_data/qb/touchdowns_and_"
     png_predictions_x = 'touchdown'
@@ -160,10 +145,13 @@ def main():
 
     print("Creating CSV file with QB stats and predicted touchdowns...")
 
+    # Variables and functions for generating the CSV file
     overwrite_csv_predictions = ""
     csv_predictions_filename = f"{project_dir}/usable_data/qb/stats_by_year_predictions.csv"
     ask_to_overwrite_csv(overwrite_csv_predictions, test_data, csv_predictions_filename)
 
+# Function for generating the CSV file and asking if the user wants to overwrite it
+# if there is a file with the same name in the directory
 def ask_to_overwrite_csv(user_input, dataset, path):
     while user_input.upper() != "Y" and user_input.upper() != "N":
         if os.path.isfile(path):
@@ -181,6 +169,7 @@ def ask_to_overwrite_csv(user_input, dataset, path):
             user_input = "Y"
             dataset.to_csv(path)
 
+# Function for generating either a PNG plot graph or a popup window of the graph
 def generate_png_graph(x, y, dataset, path, save = True):
     sns.regplot(data = dataset, x = x, y = y)
     plt.title(f"touchdowns and {y}")
@@ -192,6 +181,8 @@ def generate_png_graph(x, y, dataset, path, save = True):
     
     plt.close()
 
+# Function for generating the PNG graph file or popup window and asking if the user wants to overwrite it
+# if there is a file with the same name in the directory
 def ask_to_overwrite_graph(user_input, dataset, path, x, y, save = True):
     while user_input.upper() != "Y" and user_input.upper() != "N":
         if os.path.isfile(path):
